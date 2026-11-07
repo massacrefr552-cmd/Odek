@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Valley</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'HelpMe';
+      src: url('HelpMe.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      min-height: 100%;
+      background: #050505;
+      color: #fff;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      background-image: repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(255,255,255,.035) 4px);
+    }
+    .center {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: clamp(20px, 3vh, 36px) 24px 48px;
+      overflow: hidden;
+    }
+
+    img {
+      width: min(15vw, 150px);
+      height: auto;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 32px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 48px rgba(255, 255, 255, 0.35));
+      animation: none;
+      transform: rotate(-4deg);
+      transform-origin: center;
+    }
+
+    img.beat-flash {
+      filter: grayscale(1) invert(1) contrast(3) brightness(1.7) drop-shadow(0 0 22px white);
+    }
+
+    .users {
+      width: min(640px, 100%);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px 18px;
+      margin-top: clamp(18px, 3vh, 32px);
+    }
+
+    .user-box {
+      min-width: 0;
+      height: clamp(46px, 6vh, 58px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      font-family: 'HelpMe', 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(14px, 1.3vw, 18px);
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.42);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: inherit;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .user-box:hover,
+    .user-box:focus-visible {
+      text-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
+      transform: scale(1.05);
+    }
+
+    .fullscreen-button {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      width: 72px;
+      height: 72px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: transparent;
+      cursor: default;
+      opacity: 0;
+    }
+
+    @media (max-width: 560px) {
+      .users {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      img {
+        width: min(36vw, 24vh);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      img {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <img src="logo-new.png" alt="Logo">
+    <div class="users" id="users" aria-label="Users"></div>
+  </div>
+  <audio id="song" src="song.mp3" loop preload="auto" autoplay></audio>
+  <button class="fullscreen-button" id="fullscreen-button" aria-label="Enter fullscreen" title=""></button>
+  <script>
+    const song = document.getElementById('song');
+    const logo = document.querySelector('img');
+    let audioContext;
+    let analyser;
+    let frequencyData;
+    let bassHistory = [];
+    let lastBeat = 0;
+
+    function startBeatDetection() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaElementSource(song);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.72;
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+        frequencyData = new Uint8Array(analyser.frequencyBinCount);
+        detectBeats();
+      }
+      audioContext.resume();
+      song.play().catch(() => {});
+    }
+
+    function detectBeats() {
+      analyser.getByteFrequencyData(frequencyData);
+      const bassBins = Math.min(24, frequencyData.length);
+      let bass = 0;
+      for (let i = 0; i < bassBins; i++) bass += frequencyData[i];
+      bass /= bassBins;
+
+      bassHistory.push(bass);
+      if (bassHistory.length > 43) bassHistory.shift();
+      const average = bassHistory.reduce((sum, value) => sum + value, 0) / bassHistory.length;
+      const now = performance.now();
+
+      if (bass > average * 1.12 && bass > 28 && now - lastBeat > 180) {
+        lastBeat = now;
+        logo.classList.add('beat-flash');
+        window.setTimeout(() => logo.classList.remove('beat-flash'), 125);
+      }
+      requestAnimationFrame(detectBeats);
+    }
+
+    let playbackUnlocked = false;
+
+    function keepPlaybackRunning() {
+      if (!playbackUnlocked || !song.paused) return;
+      song.play().catch(() => {});
+      audioContext?.resume();
+    }
+
+    document.addEventListener('click', () => {
+      playbackUnlocked = true;
+      startBeatDetection();
+    }, { once: true });
+
+    song.addEventListener('ended', () => {
+      song.currentTime = 0;
+      keepPlaybackRunning();
+      song.play().catch(() => {});
+    });
+
+    song.addEventListener('stalled', keepPlaybackRunning);
+    song.addEventListener('waiting', keepPlaybackRunning);
+    document.addEventListener('visibilitychange', keepPlaybackRunning);
+
+    setInterval(keepPlaybackRunning, 1000);
+
+    document.getElementById('fullscreen-button').addEventListener('click', () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      } else {
+        document.documentElement.requestFullscreen?.();
+      }
+    });
+
+    fetch('users.txt')
+      .then(response => response.text())
+      .then(text => {
+        const names = text.split(/\r?\n/).map(name => name.trim()).filter(Boolean);
+        const users = document.getElementById('users');
+        users.replaceChildren(...names.map(name => {
+          const box = document.createElement('a');
+          box.className = 'user-box';
+          box.textContent = name;
+          box.href = `${encodeURIComponent(name.toLowerCase())}.html`;
+          box.setAttribute('aria-label', `Open ${name}'s profile`);
+          return box;
+        }));
+      });
+  </script>
+</body>
+</html>

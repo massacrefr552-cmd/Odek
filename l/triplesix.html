@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Triplesix - Blood Valley</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+  <main class="profile">
+    <div class="avatar-wrap">
+      <img class="avatar" src="logo-new.png" alt="Triplesix avatar">
+      <span class="status-dot" title="Blood Valley"></span>
+    </div>
+    <h1 class="name">Triplesix</h1>
+    <p class="role">Founder</p>
+    <div class="links">
+      <a class="profile-link" href="bv.html">Blood Valley</a>
+      <button class="profile-link" type="button" data-copy="triplesix">Copy Username</button>
+    </div>
+  </main>
+  <script>
+    document.querySelector('[data-copy]').addEventListener('click', async event => {
+      await navigator.clipboard.writeText(event.currentTarget.dataset.copy).catch(() => {});
+      event.currentTarget.textContent = 'Username Copied';
+    });
+  </script>
+</body>
+</html>

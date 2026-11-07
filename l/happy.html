@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy - Blood Valley</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+  <main class="profile">
+    <div class="avatar-wrap"><img class="avatar" src="logo-new.png" alt="Happy avatar"><span class="status-dot"></span></div>
+    <h1 class="name">Happy</h1><p class="role">Blood Valley Member</p>
+    <div class="links"><a class="profile-link" href="bv.html">Blood Valley</a><button class="profile-link" type="button" data-copy="happy">Copy Username</button></div>
+  </main>
+  <script>document.querySelector('[data-copy]').addEventListener('click',async e=>{await navigator.clipboard.writeText(e.currentTarget.dataset.copy).catch(()=>{});e.currentTarget.textContent='Username Copied'})</script>
+</body>
+</html>
